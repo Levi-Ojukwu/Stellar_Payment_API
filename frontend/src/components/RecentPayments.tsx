@@ -12,29 +12,65 @@ interface Payment {
   created_at: string;
 }
 
+interface PaginatedResponse {
+  payments: Payment[];
+  total_count: number;
+  total_pages: number;
+  page: number;
+  limit: number;
+}
+
+const LIMIT = 10;
+
 export default function RecentPayments() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Hydrate component to avoid SSR mismatch when accessing localStorage
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
     const controller = new AbortController();
 
     const fetchPayments = async () => {
       try {
+        const apiKey = localStorage.getItem("merchant_api_key");
+        if (!apiKey) {
+          setError("API key not found. Please register or log in.");
+          setLoading(false);
+          return;
+        }
+
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-        const response = await fetch(`${apiUrl}/api/payments`, {
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `${apiUrl}/api/payments?page=${page}&limit=${LIMIT}`,
+          {
+            headers: {
+              "x-api-key": apiKey,
+            },
+            signal: controller.signal,
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch payments");
         }
 
-        const data = await response.json();
+        const data: PaginatedResponse = await response.json();
         setPayments(data.payments ?? []);
+        setTotalPages(data.total_pages ?? 1);
+        setTotalCount(data.total_count ?? 0);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Failed to load payments");
@@ -46,7 +82,7 @@ export default function RecentPayments() {
     fetchPayments();
 
     return () => controller.abort();
-  }, []);
+  }, [page, hydrated]);
 
   const handlePaymentClick = (paymentId: string) => {
     setSelectedPayment(paymentId);
@@ -209,6 +245,8 @@ export default function RecentPayments() {
   }
 
   return (
+    <div className="flex flex-col gap-4">
+      {/* Table */}
     <>
       <div className="overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-left text-sm">

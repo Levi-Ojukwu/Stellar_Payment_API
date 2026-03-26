@@ -1,9 +1,10 @@
-import "dotenv/config";
+import cors from "cors";
+import 'dotenv/config';
 import express from "express";
 import morgan from "morgan";
-import cors from "cors";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+ 
 import paymentsRouter from "./routes/payments.js";
 import merchantsRouter from "./routes/merchants.js";
 import metricsRouter from "./routes/metrics.js";
@@ -12,6 +13,10 @@ import { isHorizonReachable } from "./lib/stellar.js";
 import { supabase } from "./lib/supabase.js";
 import { pool, closePool } from "./lib/db.js";
 import { validateEnvironmentVariables } from "./lib/env-validation.js";
+import { idempotencyMiddleware } from "./lib/idempotency.js";
+import { supabase } from "./lib/supabase.js";
+import merchantsRouter from "./routes/merchants.js";
+import paymentsRouter from "./routes/payments.js";
 
 validateEnvironmentVariables();
 
@@ -100,6 +105,8 @@ app.get("/health", async (req, res) => {
 });
 
 app.use("/api/create-payment", requireApiKeyAuth());
+app.use("/api/create-payment", idempotencyMiddleware);
+app.use("/api/payments", requireApiKeyAuth());
 app.use("/api/rotate-key", requireApiKeyAuth());
 app.use("/api", paymentsRouter);
 app.use("/api", merchantsRouter);
