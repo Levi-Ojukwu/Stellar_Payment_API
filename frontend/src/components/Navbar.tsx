@@ -72,11 +72,7 @@ function PaymentsIcon(active: boolean) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M7 14h4M7 10h10"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M7 14h4M7 10h10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -132,19 +128,19 @@ const dashboardMobileNavLinks: DashboardNavLink[] = [
     href: "/dashboard/overview",
     label: "Overview",
     icon: OverviewIcon,
-    enabled: true,
+    enabled: false,
   },
   {
     href: "/dashboard/payments",
     label: "Payments",
     icon: PaymentsIcon,
-    enabled: true,
+    enabled: false,
   },
   {
     href: "/dashboard/webhooks",
     label: "Webhooks",
     icon: WebhooksIcon,
-    enabled: true,
+    enabled: false,
   },
   {
     href: "/dashboard/create",
@@ -157,6 +153,10 @@ const dashboardMobileNavLinks: DashboardNavLink[] = [
 export default function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const network =
+    (process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? "testnet").toLowerCase();
+  const isMainnet = network === "public" || network === "mainnet";
+  const networkLabel = isMainnet ? "MAINNET" : "TESTNET";
   const activeDashboardMobileNavLinks = dashboardMobileNavLinks.filter(
     (link) => link.enabled,
   );
@@ -183,14 +183,13 @@ export default function Navbar() {
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur dark:border-white/10 dark:bg-black/50">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex h-16 items-center justify-between">
-              {/* Logo */}
-              <Link href="/" className="flex items-center gap-2">
-                <span className="font-mono text-sm uppercase tracking-[0.3em] text-mint">
-                  Stellar Pay
-                </span>
-              </Link>
+            <Link href="/" className="flex items-center gap-2">
+              <span className="font-mono text-sm uppercase tracking-[0.3em] text-mint">
+                Stellar Pay
+              </span>
+            </Link>
 
-              {/* Desktop Navigation */}
+            <div className="flex items-center gap-4">
               <div className="hidden items-center gap-8 md:flex">
                 {appNavLinks.map((link) => (
                   <Link
@@ -207,6 +206,17 @@ export default function Navbar() {
                   </Link>
                 ))}
               </div>
+
+              <span
+                aria-label={`Network: ${networkLabel}`}
+                className={`rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.2em] ${
+                  isMainnet
+                    ? "border-green-500/40 bg-green-500/15 text-green-300"
+                    : "border-yellow-500/50 bg-yellow-500/15 text-yellow-300"
+                }`}
+              >
+                {networkLabel}
+              </span>
 
               {!showMobileBottomNav && (
                 <button
@@ -234,6 +244,7 @@ export default function Navbar() {
               )}
             </div>
           </div>
+
           {!showMobileBottomNav && isMenuOpen && (
             <div className="border-t border-white/10 py-4 md:hidden">
               <div className="flex flex-col gap-4">
@@ -249,6 +260,7 @@ export default function Navbar() {
               </div>
             </div>
           )}
+        </div>
       </nav>
 
       {showMobileBottomNav && (
